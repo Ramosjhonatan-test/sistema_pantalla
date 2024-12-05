@@ -17,6 +17,39 @@
 
       <!-- Aquí puedes agregar más contenido o funcionalidades específicas para el estudiante -->
       <button onclick="window.location.href='{{ url_for('logout') }}'">Cerrar sesión</button>
+      <script>
+        let studentStatus = 1; // Estado inicial: 1 (activo)
+
+        // Función para actualizar el estado en el servidor (Flask)
+        function updateActivityStatus(status) {
+            fetch('/update_activity', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ active: status })
+            })
+            .then(response => response.json())
+            .then(data => console.log('Estado actualizado:', data))
+            .catch(error => console.error('Error al actualizar el estado:', error));
+        }
+
+        // Detectar cuando el estudiante cambia de pestaña o ventana (ocultando la pestaña)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                studentStatus = 0; // El estudiante se vuelve inactivo
+                updateActivityStatus(studentStatus);  // Enviar estado inactivo al servidor
+            } else {
+                studentStatus = 1; // El estudiante vuelve a estar activo
+                updateActivityStatus(studentStatus);  // Enviar estado activo al servidor
+            }
+        });
+
+        // Detectar cuando el estudiante cierra la ventana (se sale de la página)
+        window.addEventListener('beforeunload', function() {
+            updateActivityStatus(0); // Establecer estado inactivo cuando se cierra la página
+        });
+    </script>
     </div>
   </body>
 </html>

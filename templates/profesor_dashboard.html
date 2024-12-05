@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel del Profesor</title>
+    <style>
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .active {
+            background-color: green;
+        }
+        .inactive {
+            background-color: red;
+        }
+    </style>
+
+    <script>
+        // Función para enviar el tiempo seleccionado al servidor
+        function iniciarAsistencia() {
+            const tiempo = document.getElementById('tiempo Asistencia').value;
+            fetch('/iniciar_asistencia', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ tiempo: tiempo })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Asistencia automática iniciada por " + tiempo + " minutos");
+                } else {
+                    alert("Error al iniciar la asistencia automática");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error al iniciar la asistencia automática");
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Bienvenido, {{ username }}!</h1>
+    <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+    <h2>Estado de los Estudiantes</h2>
+    <div id="students-status">
+        <!-- Aquí se mostrarán los estudiantes y su estado -->
+    </div>
+
+    <script>
+        // Función para obtener y mostrar el estado de los estudiantes
+        function updateStudentsStatus() {
+            fetch('/get_activity_status')  // Llamada al endpoint que obtiene el estado
+                .then(response => response.json())
+                .then(data => {
+                    const studentsStatusDiv = document.getElementById('students-status');
+                    studentsStatusDiv.innerHTML = '';  // Limpiar el contenido actual
+                    
+                    // Iterar sobre los estudiantes y mostrar su estado
+                    data.students.forEach(student => {
+                        const studentDiv = document.createElement('div');
+                        studentDiv.textContent = student[0];  // Nombre del estudiante
+                        
+                        const statusIndicator = document.createElement('span');
+                        statusIndicator.classList.add('status-indicator');
+                        if (student[1] == 1) {  // Si el estado es 1 (activo)
+                            statusIndicator.classList.add('active');
+                        } else {  // Si el estado es 0 (inactivo)
+                            statusIndicator.classList.add('inactive');
+                        }
+
+                        studentDiv.appendChild(statusIndicator);
+                        studentsStatusDiv.appendChild(studentDiv);
+                    });
+                })
+                .catch(error => console.error('Error al obtener el estado:', error));
+        }
+
+        // Actualizar el estado cada 5 segundos (ajusta el intervalo según lo necesario)
+        setInterval(updateStudentsStatus, 5000);
+        
+        // Inicializar la actualización cuando se carga la página
+        window.onload = updateStudentsStatus;
+    </script>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Estudiante</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody id="tabla-estudiantes"></tbody>
+    </table>
+    
+    <script>
+    fetch('/asistencia_profesor?profesor_id=1')  // Cambia el ID según el profesor logueado
+        .then(response => response.json())
+        .then(data => {
+            const tabla = document.getElementById('tabla-estudiantes');
+            tabla.innerHTML = '';  // Limpia la tabla
+            data.forEach(estudiante => {
+                const row = `<tr>
+                    <td>${estudiante.nombre}</td>
+                    <td>
+                        <span style="color: ${estudiante.estado === 'Presente' ? 'green' : 'red'}">
+                            ${estudiante.estado}
+                        </span>
+                    </td>
+                </tr>`;
+                tabla.innerHTML += row;
+            });
+        });
+    </script>
+    
+    <label for="tiempo Asistencia">Seleccionar tiempo de asistencia automática:</label>
+    <select id="tiempo Asistencia">
+        <option value="15">15 minutos</option>
+        <option value="30">30 minutos</option>
+    </select>
+
+    <!-- Botón para iniciar la asistencia automática -->
+    <button onclick="iniciarAsistencia()">Iniciar Asistencia Automática</button>
+
+</body>
+</html>
